@@ -33,13 +33,13 @@ $profil = $_SESSION['profil'];
 // TODO: Inicializuj $formData hodnotami z $profil (ne prázdnými řetězci!)
 // Tím se formulář zobrazí předvyplněný aktuálními daty.
 $formData = [
-    'jmeno' => '',      // TODO: načti z $profil
-    'prijmeni' => '',    // TODO: načti z $profil
-    'email' => '',       // TODO: načti z $profil
-    'prezdivka' => '',   // TODO: načti z $profil
-    'trida' => '',       // TODO: načti z $profil
-    'bio' => '',         // TODO: načti z $profil
-    'barva' => '#4F5B93', // TODO: načti z $profil
+    'jmeno' => $profil ['jmeno']??'',      // TODO: načti z $profil
+    'prijmeni' => $profil ['prijmeni']??'',    // TODO: načti z $profil
+    'email' => $profil ['email']?? '',       // TODO: načti z $profil
+    'prezdivka' => $profil ['prezdivka']?? '',   // TODO: načti z $profil
+    'trida' => $profil['trida']?? '',       // TODO: načti z $profil
+    'bio' => $profil['bio']??'',         // TODO: načti z $profil
+    'barva' => $profil['barva']??'#4F5B93', // TODO: načti z $profil
 ];
 
 $chyby = [];
@@ -53,24 +53,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // TODO: Přečti data z formuláře do $formData (nezapomeň na trim())
+// TODO: Přečti data z formuláře do $formData (nezapomeň na trim())
 
+    $formData['jmeno']=trim($_POST['jmeno']??'');
+
+    $formData['prijmeni']=trim($_POST['prijmeni']??'');
+
+    $formData['email']=trim($_POST['email']??'');
+
+    $formData['prezdivka']=trim($_POST['prezdivka']??'');
+
+    $formData['trida']=trim($_POST['trida']??'');
+
+    $formData['bio']=trim($_POST['bio']??'');
 
     // TODO: Validace jména a příjmení (povinné, min. 2 znaky)
 
+    if($formData['jmeno']=== ''){
+        $chyby['jmeno'] = "Jméno je povinné!";
+    } elseif(mb_strlen($formData['jmeno'])<2){
+        $chyby['jmeno'] = 'jméno musí mít alespoň 2 znaky.';
+    }
+
+    if($formData['prijmeni']===''){
+        $chyby['prijmeni'] = 'Příjmení je povinné!';
+    } elseif(mb_strlen($formData['prijmeni'])<2){
+        $chyby['prijmeni'] = 'Příjmení musí mít alespoň 2 znaky.';
+    }
 
     // TODO: Validace emailu (povinný, platný formát)
+
+    if($formData['email']===''){
+        $chyby['email']= 'Email je povinný!';
+    }elseif(!filter_var($formData['email'], FILTER_VALIDATE_EMAIL)){
+         $chyby['email'] = 'Zadej platný E-mail (př: jmeno@skola.cz)';
+    }else{
+        foreach($_SESSION['uzivatele'] as $uzivatel){
+            if($uzivatel['email'] === $formData['email']){
+                $chyby['email'] = 'Tento email je již zaregistrovaný';
+                break;
+            }
+        }
+    }
+
 
 
     // TODO: Validace přezdívky
     // - Povinná, 3–20 znaků
     // - Jen písmena, čísla a podtržítka (nápověda: preg_match('/^[a-zA-Z0-9_]+$/', ...))
 
+    if($formData['prezdivka']=== ''){
+        $chyby['prezdivka'] = 'Přezdívka musí být vyplňena!';
+    }elseif(mb_strlen($formData['prezdivka'])<3){
+        $chyby['prezdivka'] = 'Přezdívka musí mít alespoň 3 znaky.';
+    }elseif(mb_strlen($formData['prezdivka'])>20){
+        $chyby['prezdivka'] = 'Přezdívka musí mít míň než 20 znaků.';
+    }elseif(preg_match($formData['prezdivka'], '/^[a-zA-Z0-9_]+$/')){
+        $chyby['prezdivka'] = 'Přezdívka musí obsahovat jen písmena, čísla či podržítka!';
+    }
+
 
     // TODO: Validace třídy – whitelist: '', '1.A', '1.B', '2.A', '2.B', '3.A', '3.B', '4.A', '4.B'
 
-
+    if($formData['trida']===''){
+        $chyby['trida'] = 'Vyber prosím třídu.';
+    }
     // TODO: Validace bio – max 200 znaků (nápověda: mb_strlen())
+
+    if($formData['bio'] === ''){
+        $chyby['bio'] = 'Bio je povinné.';
+    }elseif(mb_strlen($formData['prezdivka'])>200){
+        $chyby['bio'] = 'Bio může mít maximálně 200 znaků!';
+    }
 
 
     // TODO: Pokud nejsou chyby:
@@ -79,6 +133,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 3. Aktualizuj $profil z nové session
     // POZOR: Tady NEPŘESMĚROVÁVÁME (chceme zobrazit hlášku "Uloženo")
     //        V reálné aplikaci bys přesměroval (PRG pattern).
+
+        if (empty($chyby)) {
+        $_SESSION['profil'][] = [
+            'jmeno' => $formData['jmeno'],
+            'prijmeni' => $formData['prijmeni'],
+            'email' => $formData['email'],
+            'vek' => $formData['vek'] !== '' ? (int) $formData['vek'] : null,
+            'pohlavi' => $formData['pohlavi'],
+            'telefon' => $formData['telefon'],
+            'bio' => $formData['bio'],
+            'registrovan' => date('d.m.Y H:i'),
+        ];
+        $ulozeno = true;
+        header('Location: ' . $_SERVER['REQUEST_URI']);
+        exit;
+    }
 }
 
 ?>
